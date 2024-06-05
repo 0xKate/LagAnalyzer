@@ -139,12 +139,68 @@ void DisplayIPData(IPAddressDatabase ipData)
             const IPAddressList& ipAddresses = entry.second; // Value (vector of IP addresses)
 
             // Output interface name
-            std::cout << "Interface: " << interfaceName << std::endl;
+            std::cout << "Server: " << interfaceName << std::endl;
 
             // Output IP addresses for the interface
             for (const std::string& ipAddress : ipAddresses) {
                 std::cout << "  IP Address: " << ipAddress << std::endl;
             }
         }
+        std::cout << std::endl;
     }
+}
+
+
+bool InitializeWinsock() {
+    WSADATA wsaData;
+    int wsaStartupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    return (wsaStartupResult == 0);
+}
+
+
+void CleanupWinsock() {
+    WSACleanup();
+}
+
+std::vector<std::string> ResolveHostname(const std::string& hostname) {
+    std::vector<std::string> ipAddresses;
+
+    struct addrinfo* result = nullptr;
+    struct addrinfo hints;
+
+    // Clear the hints struct
+    ZeroMemory(&hints, sizeof(hints));
+    hints.ai_family = AF_INET;       // Use IPv4
+    hints.ai_socktype = SOCK_STREAM; // Use stream socket
+    hints.ai_protocol = IPPROTO_TCP; // Use TCP protocol
+
+    // Resolve the hostname
+    int getAddrInfoResult = getaddrinfo(hostname.c_str(), nullptr, &hints, &result);
+    if (getAddrInfoResult != 0) {
+        std::cerr << "getaddrinfo failed: " << getAddrInfoResult << std::endl;
+        return ipAddresses;
+    }
+
+    // Iterate through the result linked list and collect IPv4 addresses
+    for (auto ptr = result; ptr != nullptr; ptr = ptr->ai_next) {
+        char ipstr[INET_ADDRSTRLEN];
+
+        // Get the pointer to the address if it's IPv4
+        if (ptr->ai_family == AF_INET) {
+            struct sockaddr_in* ipv4 = reinterpret_cast<struct sockaddr_in*>(ptr->ai_addr);
+            void* addr = &(ipv4->sin_addr);
+
+            // Check if addr is still nullptr
+            if (addr != nullptr) {
+                // Convert the IPv4 address to a string and add it to the vector
+                inet_ntop(ptr->ai_family, addr, ipstr, sizeof(ipstr));
+                ipAddresses.push_back(ipstr);
+            }
+        }
+    }
+
+    // Free the memory allocated for the result
+    freeaddrinfo(result);
+
+    return ipAddresses;
 }

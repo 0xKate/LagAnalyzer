@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Repo">
+      <UniqueIdentifier>{804f4dbc-a4e9-4d5f-af7c-79c40d1b15ee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LagAnalyzer.cpp">
@@ -29,5 +32,21 @@
     <ClInclude Include="NetHelpers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitattributes">
+      <Filter>Repo</Filter>
+    </None>
+    <None Include=".gitignore">
+      <Filter>Repo</Filter>
+    </None>
+    <None Include="README.md">
+      <Filter>Repo</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.txt">
+      <Filter>Repo</Filter>
+    </Text>
   </ItemGroup>
 </Project>

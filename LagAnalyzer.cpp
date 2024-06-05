@@ -25,22 +25,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-
 #include "cxxopts.hpp"
 
 #include "NetHelpers.h"
 
-
-int main(int argc, char** argv) {
-    IPAddressDatabase ipData = GetLocalIPData();
-    ipData["DNS"] = GetDnsServers();
-
-    DisplayIPData(ipData);
-    
-    return 0;
-}
-
-int parseArgs(int argc, char** argv)
+int main(int argc, char** argv)
 {
     SetConsoleTitleA("LagAnalyzer");
     printf("LagAnalyzer Copyright(C) 2024 0xKate\n");
@@ -48,17 +37,17 @@ int parseArgs(int argc, char** argv)
     printf("This is free software, and you are welcome to redistribute it under certain conditions.\n");
     printf("LagAnalyzer is distributed under the GNU GPLv3 license.\n");
     printf("See https://github.com/0xKate/LagAnalyzer/LICENSE.txt for more info.\n");
-    printf("Source code @: https://github.com/0xKate/LagAnalyzer\n");
+    printf("Source code @: https://github.com/0xKate/LagAnalyzer\n\n");
 
     cxxopts::Options argParser("LagAnalyzer.exe");
 
     argParser.add_options()
-        ("t,target", "The target IP address", cxxopts::value<std::string>()->default_value(NULL))
+        ("t,target", "The target IP address", cxxopts::value<std::string>()->default_value(""))
         ("v,verbose", "Print out more info then typically needed.", cxxopts::value<bool>()->default_value("false"))
         ("h,help", "Print usage")
         ;
 
-    std::string targetIP;
+    std::string target;
 
     auto argResult = argParser.parse(argc, argv);
     auto verbose = argResult["verbose"].as<bool>();
@@ -69,13 +58,32 @@ int parseArgs(int argc, char** argv)
         return 101;
     }
 
+    InitializeWinsock();
+
+    IPAddressDatabase ipData = GetLocalIPData();
+    ipData["DNS"] = GetDnsServers();
+    ipData["Internet"].push_back("1.1.1.1");
+    ipData["Internet"].push_back("8.8.8.8");
+
     if (argResult.count("target")) {
-        targetIP = argResult["target"].as<std::string>();
-        if (verbose)
-            std::cout << "TargetIP: " << targetIP << std::endl;
+        target = argResult["target"].as<std::string>();
+        if (isValidIPAddress(target))
+        {
+            ipData["Target"].push_back(target);
+            if (verbose)
+                std::cout << "TargetIP: " << target << std::endl;
+        }
+        else
+        {
+            ipData["Target"] = ResolveHostname(target);
+        }
+
+
     }
 
+    DisplayIPData(ipData);
 
+    CleanupWinsock();
 
     return EXIT_SUCCESS;
 }

@@ -64,3 +64,12 @@ IPAddressDatabase GetLocalIPData();
 
 // Print out an IP Database
 void DisplayIPData(IPAddressDatabase ipData);
+
+// Initialize Winsock at the start of the program
+bool InitializeWinsock();
+
+// Cleanup Winsock at the end of the program
+void CleanupWinsock();
+
+// Resolve hostname to a list of addresses
+IPAddressList ResolveHostname(const std::string& hostname);

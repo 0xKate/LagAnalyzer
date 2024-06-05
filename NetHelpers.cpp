@@ -41,6 +41,15 @@ std::string ipv4ToString(DWORD ipAddress) {
     return std::string(ipAddrStr);
 }
 
+void stringToIPv4(const std::string& ipAddress, struct in_addr* addr)
+{
+    int result = inet_pton(AF_INET, ipAddress.c_str(), addr);
+    if (result != 1) {
+        std::cerr << "Invalid IP address: " << ipAddress << std::endl;
+    }
+}
+
+
 // Function to convert IPv6 address to string
 std::string ipv6ToString(const IN6_ADDR& ipAddress) {
     char ipAddrStr[INET6_ADDRSTRLEN];

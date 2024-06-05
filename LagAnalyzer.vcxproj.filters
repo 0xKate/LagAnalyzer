@@ -24,12 +24,21 @@
     <ClCompile Include="NetHelpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Ping.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Packets.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="NetHelpers.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Ping.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommonHeader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -29,6 +29,8 @@
 
 #include "NetHelpers.h"
 
+#include "Ping.h"
+
 int main(int argc, char** argv)
 {
     SetConsoleTitleA("LagAnalyzer");
@@ -82,6 +84,12 @@ int main(int argc, char** argv)
     }
 
     DisplayIPData(ipData);
+
+    auto ping = Ping("1.1.1.1");
+    ping.start();
+    ping.join();
+    ping.printResults();
+    
 
     CleanupWinsock();
 

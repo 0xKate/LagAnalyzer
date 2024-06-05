@@ -27,28 +27,14 @@
 
 #pragma once
 
-#include <iostream>
-#include <winsock2.h>
-#include <iphlpapi.h>
-#include <ws2tcpip.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <vector>
-#include <unordered_map>
-#include <regex>
-
-#pragma comment(lib, "iphlpapi.lib")
-#pragma comment(lib, "ws2_32.lib")
-
-#define WORKING_BUFFER_SIZE 15000
-
-typedef std::vector<std::string> IPAddressList;
-typedef std::unordered_map<std::string, IPAddressList> IPAddressDatabase;
+#include "CommonHeader.h"
 
 
 // Convert IPv4 address to string
 std::string ipv4ToString(DWORD ipAddress);
+
+// Convert string to IPv4 struct
+void stringToIPv4(const std::string& ipAddress, struct in_addr* addr);
 
 // Convert IPv6 address to string
 std::string ipv6ToString(const IN6_ADDR& ipAddress);

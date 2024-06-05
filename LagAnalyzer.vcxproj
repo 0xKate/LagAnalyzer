@@ -141,10 +141,13 @@
   <ItemGroup>
     <ClCompile Include="LagAnalyzer.cpp" />
     <ClCompile Include="NetHelpers.cpp" />
+    <ClCompile Include="Ping.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CommonHeader.h" />
     <ClInclude Include="NetHelpers.h" />
     <ClInclude Include="Packets.h" />
+    <ClInclude Include="Ping.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

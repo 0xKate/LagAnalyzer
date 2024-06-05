@@ -40,9 +40,11 @@ public:
 
 class Ping {
 public:
-    Ping(const std::string& target);
+    Ping(const std::string& target, const std::string& m_interface);
     ~Ping();
+    std::string getAddress();
     std::vector<EchoReply> getResult() const;
+    std::string getInterface();
     float getInterval();
     int getCount();
     bool isComplete() const;
@@ -52,10 +54,13 @@ public:
 
 private:
     int m_count = 4;
+    int m_sent = 0;
+    int m_recv = 0;
     float m_interval = 1.0f;
     bool m_complete = false;
     std::thread m_thread;
     std::string m_target;
+    std::string m_interface;
     std::vector<EchoReply> m_pings;
     
     // Method to send ICMP echo request

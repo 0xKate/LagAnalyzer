@@ -31,17 +31,21 @@
 #include "NetHelpers.h"
 
 
-Ping::Ping(const std::string& target) : m_interval(1.0f), m_target(target), m_complete(false), m_count(4) {}
+Ping::Ping(const std::string& target, const std::string& m_interface) : m_interval(1.0f), m_target(target), m_interface(m_interface), m_complete(false), m_count(4) {}
 
-void Ping::join()
-{
-    if (m_thread.joinable()) {
-        m_thread.join();
-    }
-}
 
 Ping::~Ping() {
     this->join();
+}
+
+std::string Ping::getAddress()
+{
+    return this->m_target;
+}
+
+std::string Ping::getInterface()
+{
+    return this->m_interface;
 }
 
 float Ping::getInterval()
@@ -55,27 +59,58 @@ int Ping::getCount()
 }
 
 void Ping::start() {
-    m_thread = std::thread(&Ping::sendPing, this, m_target);
+    this->m_thread = std::thread(&Ping::sendPing, this, m_target);
+    this->m_thread.detach();
+}
+
+void Ping::join()
+{
+    if (this->m_thread.joinable()) {
+        this->m_thread.join();
+    }
 }
 
 bool Ping::isComplete() const {
-    return m_complete;
+    return this->m_complete;
 }
 
 std::vector<EchoReply> Ping::getResult() const {
-    return m_pings;
+    return this->m_pings;
 }
 
 void Ping::printResults()
 {
-    auto x = this->getResult();
-
-    for (const EchoReply& i : x) {
-        std::cout << "Ping " << i.seq << ": Reply from " << ipv4ToString(i.ipAddress) << ": time=" << i.roundTripTime << "ms TTL=" << static_cast<int>(i.ttl) << std::endl;
+    if (this->m_pings.empty()) {
+        std::cout << "No results available." << std::endl;
+        return;
     }
-    std::cout << std::endl;
 
+    ULONG minRTT = std::numeric_limits<ULONG>::max();
+    ULONG maxRTT = 0;
+    ULONG totalRTT = 0;
+
+    std::cout << "Server: " << this->m_interface << std::endl;
+    std::cout << " -IP Address: " << this->m_target << std::endl;  
+    
+    for (const auto& reply : this->m_pings) {
+
+        if (false)
+        std::cout << "  - Ping " << reply.seq << ": Reply from " << ipv4ToString(reply.ipAddress) << ": time=" << reply.roundTripTime << "ms TTL=" << static_cast<int>(reply.ttl) << std::endl;
+
+        minRTT = std::min(minRTT, reply.roundTripTime);
+        maxRTT = std::max(maxRTT, reply.roundTripTime);
+        totalRTT += reply.roundTripTime;
+    }
+
+    float averageRTT = static_cast<float>(totalRTT) / this->m_pings.size();
+
+    std::cout << "  - Minimum Round Trip Time: " << minRTT << "ms" << std::endl;
+    std::cout << "  - Maximum Round Trip Time: " << maxRTT << "ms" << std::endl;
+    std::cout << "  - Average Round Trip Time: " << averageRTT << "ms" << std::endl;
+
+    std::cout << std::endl;
 }
+
 
 void Ping::sendPing(const std::string& ipAddress) {
     HANDLE hIcmpFile = IcmpCreateFile();
@@ -92,10 +127,13 @@ void Ping::sendPing(const std::string& ipAddress) {
     DWORD replyBufferSize = sizeof(ICMP_ECHO_REPLY) + 8 + 1; // Extra space for data
     std::unique_ptr<BYTE[]> replyBuffer(new BYTE[replyBufferSize]);
 
+    DWORD timeout = static_cast<DWORD>(m_interval * 1000); // Convert interval to milliseconds
+
     for (int i = 0; i < this->m_count; ++i) {
-        DWORD replySize = IcmpSendEcho(hIcmpFile, addr.s_addr, nullptr, 0, nullptr, replyBuffer.get(), replyBufferSize, 1000);
+        DWORD replySize = IcmpSendEcho(hIcmpFile, addr.s_addr, nullptr, 0, nullptr, replyBuffer.get(), replyBufferSize, timeout);
+        this->m_sent++;
         if (replySize == 0) {
-            std::cerr << "Failed to send ICMP echo request (attempt " << (i + 1) << "/30)" << std::endl;
+            std::cerr << "Failed to send ICMP echo request (attempt " << (i + 1) << "/" << this->m_count<< ")" << std::endl;
         }
         else {
             // Extract fields from the replyBuffer

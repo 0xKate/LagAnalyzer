@@ -27,7 +27,6 @@
 
 #include "NetHelpers.h"
 
-
 bool isValidIPAddress(const std::string& str) {
     // Regular expression to match IP address
     std::regex ipRegex("^\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b$");

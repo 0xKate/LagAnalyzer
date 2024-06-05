@@ -31,15 +31,7 @@
 
 #include "Ping.h"
 
-#include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <iostream>
-
-#include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <iostream>
+//extern bool g_verboseLogging;
 
 int DisplayTime(float duration) {
     // Get the current system time
@@ -62,7 +54,7 @@ int DisplayTime(float duration) {
     localtime_s(&local_time, &now_time);
 
     // Display the updated local time
-    std::cout << "The test will end by: " << std::put_time(&local_time, "%H:%M:%S") << " (+"<< duration + 1<<" seconds)" << std::endl;
+    std::cout << "The test will end by: " << std::put_time(&local_time, "%H:%M:%S") << " (+"<< duration + 1<<" seconds)" << std::endl << std::endl;
 
     return 0;
 }
@@ -80,15 +72,15 @@ int main(int argc, char** argv)
     cxxopts::Options argParser("LagAnalyzer.exe");
 
     argParser.add_options()
-        ("t,target", "The target IP address", cxxopts::value<std::string>()->default_value(""))
+        ("t,target", "The target IP address", cxxopts::value<std::string>()->default_value("1.1.1.1"))
         ("v,verbose", "Print out more info then typically needed.", cxxopts::value<bool>()->default_value("false"))
         ("h,help", "Print usage")
         ;
 
-    std::string target;
+    
 
     auto argResult = argParser.parse(argc, argv);
-    auto verbose = argResult["verbose"].as<bool>();
+    // g_verboseLogging = argResult["verbose"].as<bool>();
 
     if (argResult.count("help"))
     {
@@ -97,40 +89,93 @@ int main(int argc, char** argv)
     }
 
     InitializeWinsock();
-
+    
     IPAddressDatabase ipData = GetLocalIPData();
     ipData["DNS"] = GetDnsServers();
-    ipData["Internet"].push_back("1.1.1.1");
-    ipData["Internet"].push_back("8.8.8.8");
 
-    if (argResult.count("target")) {
-        target = argResult["target"].as<std::string>();
-        if (isValidIPAddress(target))
-        {
-            ipData["Target"].push_back(target);
-            if (verbose)
-                std::cout << "TargetIP: " << target << std::endl;
-        }
-        else
-        {
-            ipData["Target"] = ResolveHostname(target);
-        }
-
-
+    std::string target = argResult["target"].as<std::string>();
+    if (isValidIPAddress(target))
+    {
+        ipData["Target"].push_back(target);
+        //if (g_verboseLogging)
+        //    std::cout << "TargetIP: " << target << std::endl;
+    }
+    else
+    {
+        ipData["Target"] = ResolveHostname(target);
     }
 
-    DisplayIPData(ipData);
 
-    auto ping = Ping("1.1.1.1");
-    ping.start();
+    if (ipData.empty()) {
+        std::cerr << "No IP addresses found." << std::endl;
+    }
+    else {
+        //DisplayIPData(ipData);
 
-    DisplayTime(ping.getInterval() * ping.getCount());
+        std::vector<std::unique_ptr<Ping>> pings;
 
-    ping.join();
-    ping.printResults();
-    
+        for (const auto& entry : ipData) {
+            const std::string& interfaceName = entry.first;
+            const IPAddressList& ipAddresses = entry.second;
+
+            // Output interface name
+            // std::cout << "Server: " << interfaceName << std::endl;
+
+            //Output IP addresses for the interface
+            for (const std::string& ipAddress : ipAddresses) {
+                // std::cout << " -IP Address: " << ipAddress << std::endl;
+
+                if (isValidIPAddress(ipAddress))
+                {
+                    std::unique_ptr<Ping> p = std::make_unique<Ping>(ipAddress, interfaceName);
+                    p->start();
+                    pings.push_back(std::move(p));
+                }
+            }
+            //DisplayTime(pings.back().getCount() * pings.back().getInterval());
+        }
+
+         
+        std::this_thread::sleep_for(std::chrono::milliseconds(7000));
+
+
+        // Wait for all pings to complete
+        bool allComplete = false;
+        while (!allComplete) {
+            allComplete = true;
+            for (auto& ping : pings) {
+                if (!ping->isComplete()) {
+                    allComplete = false;
+                    break;
+                }
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Sleep for a short time before checking again
+        }
+        
+        for (auto& ping : pings) {
+            ping->join(); // Wait for the thread associated with each ping to finish
+        }
+
+        // Now that all threads have finished, it's safe to access the results
+        for (auto& ping : pings) {
+            auto r = ping->getResult();
+            //for (auto& x : r)
+            //{
+            //    std::cout << "  - Ping " << x.seq << ": Reply from " << ipv4ToString(x.ipAddress) << ": time=" << x.roundTripTime << "ms TTL=" << static_cast<int>(x.ttl) << std::endl;
+            //}
+
+            ping->printResults();
+
+        }
+        
+        //calculateLatencyIncreases(pings);
+
+        
+    }
 
     CleanupWinsock();
+
+    system("pause");
 
     return EXIT_SUCCESS;
 }

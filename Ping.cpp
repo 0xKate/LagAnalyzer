@@ -1,11 +1,37 @@
+/*
+
+  _                   _                _
+ | |    __ _  __ _   / \   _ __   __ _| |_   _ _______ _ __
+ | |   / _` |/ _` | / _ \ | '_ \ / _` | | | | |_  / _ | '__|
+ | |__| (_| | (_| |/ ___ \| | | | (_| | | |_| |/ |  __| |
+ |_____\__,_|\__, /_/   \_|_| |_|\__,_|_|\__, /___\___|_|
+             |___/                       |___/
+
+*/
+/*
+    Copyright (C) 2024 0xKate
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #pragma once
 
 #include "Ping.h"
 #include "NetHelpers.h"
 
 
-// Constructor
-Ping::Ping(const std::string& target) : m_target(target), m_complete(false), m_count(10) {}
+Ping::Ping(const std::string& target) : m_interval(1.0f), m_target(target), m_complete(false), m_count(4) {}
 
 void Ping::join()
 {
@@ -14,22 +40,28 @@ void Ping::join()
     }
 }
 
-// Destructor
 Ping::~Ping() {
     this->join();
 }
 
-// Method to start the ping
+float Ping::getInterval()
+{
+    return this->m_interval;
+}
+
+int Ping::getCount()
+{
+    return this->m_count;
+}
+
 void Ping::start() {
     m_thread = std::thread(&Ping::sendPing, this, m_target);
 }
 
-// Method to check if ping is complete
 bool Ping::isComplete() const {
     return m_complete;
 }
 
-// Method to get the result of the ping
 std::vector<EchoReply> Ping::getResult() const {
     return m_pings;
 }
@@ -60,7 +92,7 @@ void Ping::sendPing(const std::string& ipAddress) {
     DWORD replyBufferSize = sizeof(ICMP_ECHO_REPLY) + 8 + 1; // Extra space for data
     std::unique_ptr<BYTE[]> replyBuffer(new BYTE[replyBufferSize]);
 
-    for (int i = 0; i < m_count; ++i) {
+    for (int i = 0; i < this->m_count; ++i) {
         DWORD replySize = IcmpSendEcho(hIcmpFile, addr.s_addr, nullptr, 0, nullptr, replyBuffer.get(), replyBufferSize, 1000);
         if (replySize == 0) {
             std::cerr << "Failed to send ICMP echo request (attempt " << (i + 1) << "/30)" << std::endl;
@@ -79,8 +111,10 @@ void Ping::sendPing(const std::string& ipAddress) {
         }
 
         // Wait for 1 second before sending the next ping
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(m_interval * 1000)));
     }
 
     IcmpCloseHandle(hIcmpFile);
+
+    this->m_complete = true;
 }

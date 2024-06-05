@@ -31,6 +31,42 @@
 
 #include "Ping.h"
 
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <iostream>
+
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <iostream>
+
+int DisplayTime(float duration) {
+    // Get the current system time
+    auto now = std::chrono::system_clock::now();
+
+    // Convert the system time to time since epoch
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+
+    // Get the local time with timezone
+    std::tm local_time;
+    localtime_s(&local_time, &now_time);
+
+    // Add 30 seconds to the current time
+    now += std::chrono::seconds((int)duration + 1);
+
+    // Convert the updated time to time since epoch
+    now_time = std::chrono::system_clock::to_time_t(now);
+
+    // Get the updated local time with timezone
+    localtime_s(&local_time, &now_time);
+
+    // Display the updated local time
+    std::cout << "The test will end by: " << std::put_time(&local_time, "%H:%M:%S") << " (+"<< duration + 1<<" seconds)" << std::endl;
+
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
     SetConsoleTitleA("LagAnalyzer");
@@ -87,6 +123,9 @@ int main(int argc, char** argv)
 
     auto ping = Ping("1.1.1.1");
     ping.start();
+
+    DisplayTime(ping.getInterval() * ping.getCount());
+
     ping.join();
     ping.printResults();
     
